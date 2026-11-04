@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Usage Tracker</string>
+
+    <!-- Tabs -->
+    <string name="tab_overview">Overview</string>
+    <string name="tab_apps">Apps</string>
+    <string name="tab_blocker">Blocker</string>
+    <string name="tab_history">History</string>
+    <string name="tab_settings">Settings</string>
+
+    <!-- Overview -->
+    <string name="todays_usage">Today\'s Usage</string>
+    <string name="app_sessions">app sessions</string>
+    <string name="last_updated">Last updated %1$s</string>
+    <string name="period_hourly">Hourly</string>
+    <string name="period_7_days">7 days</string>
+    <string name="period_30_days">30 days</string>
+    <string name="most_used_apps">Most Used Apps</string>
+    <string name="most_opened_apps">Most Opened Apps</string>
+    <string name="usage_timeline">Usage Timeline</string>
+
+    <!-- Apps -->
+    <string name="search_apps">Search apps</string>
+    <string name="period_today">Today</string>
+    <string name="period_yesterday">Yesterday</string>
+    <string name="sort_most_used">Most used</string>
+    <string name="sort_most_opened">Most opened</string>
+    <string name="sort_name">Name</string>
+    <string name="opens">%1$d opens</string>
+    <string name="open_count_disclaimer">Open counts are estimated from Android usage events and may not match exactly.</string>
+
+    <!-- Blocker -->
+    <string name="blocker_permissions">Permissions</string>
+    <string name="perm_overlay_title">Display over other apps</string>
+    <string name="perm_overlay_desc">Covers blocked apps with a focus screen</string>
+    <string name="perm_dnd_title">Do Not Disturb access</string>
+    <string name="perm_dnd_desc">Blocks notifications when an app is blocked</string>
+    <string name="perm_usage_title">Usage Access</string>
+    <string name="perm_usage_desc">Required to detect app launches</string>
+    <string name="perm_notif_title">Notifications permission</string>
+    <string name="perm_notif_desc">Shows the blocker status notification</string>
+    <string name="grant">Grant</string>
+    <string name="granted">Granted</string>
+    <string name="notifications_section">Notifications</string>
+    <string name="block_all_notifications">Block all notifications while focusing</string>
+    <string name="app_blocking_section">App Blocking</string>
+    <string name="app_blocking_desc">Block selected apps for a set duration. The app is covered by a focus screen until the timer ends.</string>
+    <string name="choose_apps_and_timer">Choose apps &amp; set timer</string>
+    <string name="focus_mode">Focus Mode</string>
+    <string name="remaining_time">Remaining: %1$s</string>
+    <string name="unblock">Unblock</string>
+    <string name="daily_limits_section">Daily Limits</string>
+    <string name="daily_limits_desc">Limit how many times an app can be opened per day.</string>
+    <string name="blocker_active">Blocker is active</string>
+    <string name="blocker_idle">No apps currently blocked</string>
+
+    <!-- History -->
+    <string name="daily_summary">Daily Summary</string>
+    <string name="app_breakdown">App breakdown</string>
+    <string name="select_date">Select date</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- Settings -->
+    <string name="settings_usage_access">Usage Access</string>
+    <string name="settings_usage_access_granted">Usage access granted</string>
+    <string name="settings_usage_access_missing">Usage access required to read usage stats</string>
+    <string name="manage_usage_access">Manage Usage Access</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="theme_system">System default</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="settings_show_system_apps">Show system apps in lists</string>
+    <string name="settings_data">Data</string>
+    <string name="refresh_usage_data">Refresh usage data</string>
+    <string name="clear_cached_data">Clear cached data</string>
+    <string name="delete_all_data">Delete all data</string>
+    <string name="export_csv">Export data (CSV)</string>
+    <string name="settings_about">About</string>
+    <string name="version_x">Version %1$s</string>
+
+    <!-- Ads -->
+    <string name="settings_ads">Ads</string>
+    <string name="settings_ads_summary">This app shows ads served by Google AdMob.</string>
+    <string name="settings_ads_detail">AdMob and its partners may use device identifiers and usage data to serve relevant ads. Usage data collected by this app for its own charts and history is never sent to ad networks.</string>
+    <string name="settings_ads_mode_debug">Ad unit mode: Test ads (debug build)</string>
+    <string name="settings_ads_mode_release">Ad unit mode: Live ads (release)</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title">Usage Tracker</string>
+    <string name="onboarding_subtitle">Understand how you spend time on your phone. Your usage data stays on your device; ads are served by Google AdMob.</string>
+    <string name="onboarding_grant_usage">Grant Usage Access</string>
+    <string name="onboarding_skip">Skip for now</string>
+    <string name="onboarding_get_started">Get started</string>
+    <string name="onboarding_privacy_note">Usage data is 100% local. Ads are served by Google AdMob and may use device identifiers per their policy.</string>
+
+    <!-- Blocker service -->
+    <string name="blocker_channel_name">Blocker</string>
+    <string name="blocker_channel_desc">Shows when an app is being blocked</string>
+    <string name="blocker_notification_text">Focus mode active</string>
+    <string name="blocker_overlay_text">This app is blocked. Stay focused.</string>
+    <string name="blocker_overlay_close">Close</string>
+
+    <!-- Common -->
+    <string name="no_data">No usage data yet</string>
+    <string name="loading">Loading…</string>
+    <string name="error_generic">Something went wrong</string>
+    <string name="confirm">Confirm</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+</resources>

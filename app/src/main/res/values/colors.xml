@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Light theme: cream/off-white background, dark charcoal text, muted gold accent -->
+    <color name="bg_cream">#FFF8F0</color>
+    <color name="bg_card">#FFFFFFFF</color>
+    <color name="bg_card_alt">#FFF1E0</color>
+    <color name="text_primary">#2A1F17</color>
+    <color name="text_secondary">#6B5847</color>
+    <color name="text_disabled">#A89A8C</color>
+    <color name="accent_gold">#B08D3F</color>
+    <color name="accent_gold_dark">#8E6F2B</color>
+    <color name="accent_olive">#7A7A3D</color>
+    <color name="border_subtle">#E8DCC8</color>
+    <color name="progress_track">#E8DCC8</color>
+    <color name="danger">#A04030</color>
+    <color name="success">#5E7A3D</color>
+
+    <!-- Dark theme -->
+    <color name="bg_cream_dark">#1E1813</color>
+    <color name="bg_card_dark">#2A211A</color>
+    <color name="bg_card_alt_dark">#332820</color>
+    <color name="text_primary_dark">#F2E8D8</color>
+    <color name="text_secondary_dark">#B8A68E</color>
+    <color name="text_disabled_dark">#6B5C4A</color>
+    <color name="accent_gold_dark_theme">#D4B26A</color>
+    <color name="border_subtle_dark">#3D3328</color>
+    <color name="progress_track_dark">#3D3328</color>
+</resources>
