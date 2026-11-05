@@ -13,6 +13,13 @@ Open: <https://play.google.com/console/u/0/developers/{your-developer-id}/app/{a
 
 ## Special permissions that require a declaration
 
+> **UPDATE (v1.2.4):** The restricted `QUERY_ALL_PACKAGES` permission has been
+> **completely removed**. Package visibility is now granted via a
+> `<queries><intent>` (MAIN/LAUNCHER) declaration in the manifest, which makes
+> all launchable apps visible without the restricted permission. **You no
+> longer need to fill the "Query all packages" declaration form or provide a
+> video.** The remaining declarations below are simpler yes/no forms.
+
 Play Console's "Sensitive app permissions" page tracks *all* permissions in the
 Google Play Policy Center "high‑risk / sensitive" list. Our release declares
 the following ones (the merged manifest in the AAB was used to produce this list):
@@ -21,7 +28,7 @@ the following ones (the merged manifest in the AAB was used to produce this list
 |---|---|---|---|
 | 1 | `android.permission.PACKAGE_USAGE_STATS` | Core feature. The app's entire purpose is tracking per‑app usage time. We read `UsageStatsManager.queryAndAggregateUsageStats()` and `queryEvents()` to show daily/weekly usage breakdowns and history charts. | Permission type: **Usage access**. Select: **Yes — this app needs usage access.** In the justification box, write: *"UsageTracker displays the user's per‑app screen‑time usage and historical charts. It uses UsageStatsManager to aggregate time‑spent data for the user only. The data is stored entirely on‑device and never leaves the device."* Add a demo video link showing the user granting the permission in Settings → Apps → Special access → Usage access. |
 | 2 | `android.permission.SYSTEM_ALERT_WINDOW` | The blocker feature draws a full‑screen "stay focused" overlay on top of user‑selected apps. | Permission type: **Display over other apps**. Select: **Yes — this app needs to draw over other apps.** Justification: *"UsageTracker's app‑blocking feature shows a blocking screen over user‑selected apps to help the user stay focused. The overlay is triggered only when the user opens an app they have explicitly added to their block list, and it disappears immediately when they leave the app."* |
-| 3 | `android.permission.QUERY_ALL_PACKAGES` | We need to enumerate installed apps to display their names, icons, and let the user pick which apps to track/block. | Permission type: **Query all packages**. This is the most strictly reviewed permission. **Make sure you select one of the approved use‑cases**. For an app like UsageTracker, the closest valid use‑case is *"App drawer / launcher / app‑management functionality that needs to show installed apps to the user."* Justification: *"UsageTracker lets the user view a list of all installed apps and select which ones to track usage for and which to block. We use PackageManager to look up app labels and icons so the user can recognize apps in our picker. We do not transmit the list of installed packages off‑device."* |
+| 3 | ~~`android.permission.QUERY_ALL_PACKAGES`~~ | **Removed in v1.2.4.** We now declare a `<queries>` MAIN/LAUNCHER intent filter in the manifest instead, which Play allows without any declaration. If the Play Console form still shows "Query all packages" for an older AAB, skip it — it will disappear once the v1.2.4 bundle (versionCode 8) is uploaded. | Nothing — the permission is gone. |
 
 ## Permissions that do **not** need a Sensitive permissions declaration
 
