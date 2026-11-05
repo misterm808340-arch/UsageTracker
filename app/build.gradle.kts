@@ -8,14 +8,14 @@ plugins {
 
 android {
     namespace = "com.usagetracker.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.usagetracker.app"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 6
-        versionName = "1.2.2"
+        targetSdk = 36
+        versionCode = 7
+        versionName = "1.2.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
