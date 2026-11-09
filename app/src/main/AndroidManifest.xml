@@ -5,6 +5,18 @@
     <!-- Permissions: AdMob needs network access to fetch ads. All other data stays on device. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!--
+      AdMob Advertising ID permission.
+      Required by Google Mobile Ads SDK to deliver personalized ads.
+      While the SDK auto-merges this permission into APKs built from the AAB
+      via bundletool, the AAB's own merged manifest may not carry it
+      (Play Console checks the AAB manifest, not the generated APKs).
+      Declaring it explicitly here ensures Play Console's "Ad ID declaration"
+      form passes its manifest-compliance check.
+      See: https://developers.google.com/admob/android/privacy/enabling
+    -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
