@@ -14,8 +14,8 @@ android {
         applicationId = "com.usagetracker.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.2.4"
+        versionCode = 10
+        versionName = "1.2.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }

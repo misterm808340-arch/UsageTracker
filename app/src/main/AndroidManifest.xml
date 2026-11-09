@@ -15,6 +15,18 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!--
+      Device compatibility — explicitly relax features that are
+      auto-implied as REQUIRED by Android's manifest merger.
+      Without these `android:required="false"` declarations, Play Store's
+      compatibility check filters out flagship devices that do not report
+      `android.hardware.faketouch` (observed on Galaxy S25 Ultra running
+      One UI 7 / Android 15+). Our app works with a standard touchscreen
+      but does not strictly require it for core usage-tracking features.
+    -->
+    <uses-feature android:name="android.hardware.faketouch" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
+    <!--
       Package visibility (Android 11+).
       Declaring a MAIN/LAUNCHER intent query makes every app that has a
       launcher activity visible to us — this replaces the restricted
@@ -41,14 +53,17 @@
         tools:targetApi="36">
 
         <!--
-          AdMob App ID.
-          Replace this with YOUR AdMob App ID before publishing.
-          The value below is Google's official sample App ID and only serves test ads.
+          AdMob App ID (production).
+          This is the real AdMob App ID for this app — paired with the
+          production Banner / Interstitial / Rewarded ad unit IDs in
+          com.usagetracker.app.ads.AdMob. In debug builds the SDK still
+          returns Google's test ads (see AdMob.initialize test-device list)
+          to avoid policy violations during development.
           See: https://developers.google.com/admob/android/quick-start
         -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-4359575771288892~6837052184" />
 
 
         <activity

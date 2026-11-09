@@ -1,6 +1,8 @@
 package com.usagetracker.app.ui.settings
 
+import android.content.Context
 import android.content.Intent
+import android.app.Activity
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -12,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -19,7 +23,9 @@ import androidx.compose.material.icons.outlined.Cached
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -40,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.usagetracker.app.BuildConfig
 import com.usagetracker.app.ads.BannerAd
+import com.usagetracker.app.ads.RewardedAdManager
 import com.usagetracker.app.data.datastore.ThemeMode
 import com.usagetracker.app.ui.components.SectionHeader
 
@@ -228,6 +235,34 @@ fun SettingsScreen(
                 Text("Ad unit mode: ${if (BuildConfig.DEBUG) "Test ads (debug build)" else "Live ads (release)"}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                // Optional rewarded ad — strictly opt-in, never auto-shown.
+                Spacer(Modifier.height(12.dp))
+                var rewardToast by remember { mutableStateOf<String?>(null) }
+                val ctx = LocalContext.current
+                Button(
+                    onClick = {
+                        val act = ctx.findActivity()
+                        if (act != null) {
+                            RewardedAdManager.show(act) { amount ->
+                                rewardToast = "Thanks! You earned $amount reward."
+                            }
+                        }
+                    },
+                    enabled = RewardedAdManager.isReady(),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Outlined.PlayArrow, contentDescription = null,
+                        modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Watch a short ad to support us")
+                }
+                LaunchedEffect(rewardToast) {
+                    rewardToast?.let {
+                        Toast.makeText(ctx, it, Toast.LENGTH_SHORT).show()
+                        rewardToast = null
+                    }
+                }
             }
         }
 
@@ -301,4 +336,14 @@ private fun SettingsActionRow(
             }
         }
     }
+}
+
+/** Walks up the Context chain to find the host Activity, if any. */
+private fun Context.findActivity(): Activity? {
+    var ctx: Context? = this
+    while (ctx is android.content.ContextWrapper) {
+        if (ctx is Activity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
 }
