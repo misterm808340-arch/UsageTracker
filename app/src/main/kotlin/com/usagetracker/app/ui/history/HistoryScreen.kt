@@ -149,6 +149,8 @@ fun HistoryScreen(
                     startMs = t.startTimeMs,
                     endMs = t.endTimeMs,
                     durationMs = t.durationMs,
+                    packageName = t.packageName,
+                    onClick = { onOpenApp(t.packageName, t.label) },
                 )
                 Spacer(Modifier.height(4.dp))
             }

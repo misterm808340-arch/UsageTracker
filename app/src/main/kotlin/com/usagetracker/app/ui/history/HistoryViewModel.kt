@@ -68,7 +68,9 @@ class HistoryViewModel(
                     val includeSystem = try {
                         settingsRepo.showSystemApps.first()
                     } catch (t: Throwable) { false }
-                    val timeline = usageRepo.timelineForDay(day, includeSystem)
+                    // v1.2.8: timeline shows EVERY app usage session for the
+                    // selected day (no 60-item limit), newest first.
+                    val timeline = usageRepo.timelineForDayAll(day, includeSystem)
 
                     val sessions = com.usagetracker.app.data.local.UsageDatabase.get(getApplication())
                         .usageSessionDao().forDay(day)

@@ -192,6 +192,9 @@ class UsageRepositoryImpl(
      * Timeline for one day — NEWEST FIRST (the UI used to render only the first 40
      * chronological entries, hiding everything after early morning). System apps
      * are filtered so launcher/systemui noise doesn't flood the list.
+     *
+     * Default `limit=60` keeps Overview's preview lightweight. History uses
+     * [timelineForDayAll] to render EVERY session for the selected day.
      */
     suspend fun timelineForDay(day: Int, includeSystem: Boolean = false, limit: Int = 60): List<TimelineEntry> =
         withContext(Dispatchers.IO) {
@@ -202,6 +205,34 @@ class UsageRepositoryImpl(
                 .filter { SystemPackageFilter.isUserFacing(it.packageName, sys[it.packageName] ?: false, includeSystem) }
                 .sortedByDescending { it.startTimeMs }
                 .take(limit)
+                .map {
+                    TimelineEntry(
+                        packageName = it.packageName,
+                        label = labels[it.packageName] ?: it.packageName,
+                        startTimeMs = it.startTimeMs,
+                        endTimeMs = it.endTimeMs,
+                        durationMs = it.durationMs,
+                    )
+                }
+                .toList()
+        }
+
+    /**
+     * Full timeline for one day — no [limit], newest first.
+     *
+     * Used by the History screen to display EVERY app usage session for the
+     * selected date, as requested by the v1.2.8 timeline upgrade. System apps
+     * are still filtered out unless [includeSystem] is true (same policy as
+     * [timelineForDay]).
+     */
+    suspend fun timelineForDayAll(day: Int, includeSystem: Boolean = false): List<TimelineEntry> =
+        withContext(Dispatchers.IO) {
+            val sessions = db.usageSessionDao().forDay(day)
+            val labels = appLabels()
+            val sys = appSystemFlags()
+            sessions.asSequence()
+                .filter { SystemPackageFilter.isUserFacing(it.packageName, sys[it.packageName] ?: false, includeSystem) }
+                .sortedByDescending { it.startTimeMs }
                 .map {
                     TimelineEntry(
                         packageName = it.packageName,
