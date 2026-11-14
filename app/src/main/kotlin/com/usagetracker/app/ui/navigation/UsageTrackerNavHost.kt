@@ -184,6 +184,7 @@ fun UsageTrackerNavHost(factory: AppViewModelFactory) {
                     onSetLimit = { p, l, n, e -> vm.setLimit(p, l, n, e) },
                     onRemoveLimit = vm::removeLimit,
                     onListInstalled = { vm.listInstalledForPicker(false) },
+                    onResume = vm::refreshPermissions,
                 )
             }
             composable(Routes.HISTORY) {

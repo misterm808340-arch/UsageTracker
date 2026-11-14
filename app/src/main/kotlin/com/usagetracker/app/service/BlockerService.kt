@@ -57,8 +57,37 @@ class BlockerService : Service() {
     override fun onCreate() {
         super.onCreate()
         wm = getSystemService(WINDOW_SERVICE) as WindowManager
+        // v1.3.0-fix: create the notification channel BEFORE building/posting the
+        // foreground notification. On Android 8+ the channel must exist or the
+        // notification is silently dropped (and on Android 13+ the foreground
+        // service may fail to start when POST_NOTIFICATIONS is not granted).
+        createNotificationChannel()
         startForeground(NOTIF_ID, buildNotification())
         observeBlocks()
+    }
+
+    /**
+     * v1.3.0-fix: register the blocker notification channel.
+     * Uses the existing R.string.blocker_channel_name / blocker_channel_desc
+     * resources (previously defined but never referenced).
+     * Importance LOW — blocker is a silent status notification, not an alert.
+     */
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val nm = getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager
+        if (nm.getNotificationChannel(CHANNEL_ID) != null) return
+        val channel = android.app.NotificationChannel(
+            CHANNEL_ID,
+            getString(R.string.blocker_channel_name),
+            android.app.NotificationManager.IMPORTANCE_LOW,
+        ).apply {
+            description = getString(R.string.blocker_channel_desc)
+            setShowBadge(false)
+            enableVibration(false)
+            setSound(null, null)
+            lockscreenVisibility = android.app.Notification.VISIBILITY_PRIVATE
+        }
+        nm.createNotificationChannel(channel)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
@@ -179,8 +208,14 @@ class BlockerService : Service() {
     }
 
     private fun buildNotification(): android.app.Notification {
-        val channelId = "blocker"
-        return androidx.core.app.NotificationCompat.Builder(this, channelId)
+        // v1.3.0-fix: channel is now created in onCreate() before this is called.
+        // Also guard against Android 13+ where the user may have denied
+        // POST_NOTIFICATIONS — the foreground-service notification can still be
+        // posted (FGS notifications are exempt from the permission on Android
+        // 13+ when the channel is created), but we fall back to a basic
+        // NotificationCompat.Builder to avoid a hard crash if the channel was
+        // somehow not created (e.g. pre-O devices).
+        return androidx.core.app.NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_lock)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(getString(R.string.blocker_notification_text))
@@ -198,6 +233,7 @@ class BlockerService : Service() {
 
     companion object {
         const val NOTIF_ID = 4201
+        const val CHANNEL_ID = "blocker"
         const val EXTRA_PKG = "pkg"
         const val EXTRA_DURATION_MS = "duration_ms"
         private const val POLL_INTERVAL_MS = 900L

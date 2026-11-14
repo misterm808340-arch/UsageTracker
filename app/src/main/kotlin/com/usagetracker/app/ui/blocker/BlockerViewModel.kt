@@ -40,13 +40,21 @@ class BlockerViewModel(
     private val _state = MutableStateFlow(BlockerUiState())
     val state: StateFlow<BlockerUiState> = _state.asStateFlow()
 
+    // v1.3.0-fix: a manual trigger flow that lets us recompute the permission
+    // flags when the user returns from a system Settings screen (the original
+    // combine only re-emits when blocked/limits/blockNotifications change, so
+    // granting a permission in Settings did NOT refresh the cards). The trigger
+    // is bumped from the screen's lifecycle-on-resume hook.
+    private val permissionRefreshTick = MutableStateFlow(0L)
+
     init {
         viewModelScope.launch {
             combine(
                 blockerRepo.observeBlocked(),
                 blockerRepo.observeLimits(),
                 settingsRepo.blockNotifications,
-            ) { blocked, limits, blockNotif ->
+                permissionRefreshTick,
+            ) { blocked, limits, blockNotif, _ ->
                 BlockerUiState(
                     loading = false,
                     hasOverlay = settingsRepo.hasOverlayPermission(),
@@ -59,6 +67,15 @@ class BlockerViewModel(
                 )
             }.collect { _state.value = it }
         }
+    }
+
+    /**
+     * v1.3.0-fix: re-check all four permission flags. Called by BlockerScreen's
+     * ON_RESUME observer so the permission cards update immediately when the
+     * user returns from system Settings.
+     */
+    fun refreshPermissions() {
+        permissionRefreshTick.value = permissionRefreshTick.value + 1L
     }
 
     fun blockApp(pkg: String, label: String, minutes: Int) {

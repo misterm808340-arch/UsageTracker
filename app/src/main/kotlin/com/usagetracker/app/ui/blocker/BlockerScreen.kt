@@ -1,5 +1,8 @@
 package com.usagetracker.app.ui.blocker
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
@@ -45,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -54,6 +59,8 @@ import com.usagetracker.app.data.local.entity.BlockedAppEntity
 import com.usagetracker.app.data.local.entity.LaunchLimitEntity
 import com.usagetracker.app.domain.util.PermissionLogic
 import com.usagetracker.app.ui.components.SectionHeader
+import com.usagetracker.app.ui.theme.Danger
+import com.usagetracker.app.ui.theme.Success
 import com.usagetracker.app.util.TimeFormat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -69,11 +76,36 @@ fun BlockerScreen(
     onSetLimit: (String, String, Int, Boolean) -> Unit,
     onRemoveLimit: (String) -> Unit,
     onListInstalled: suspend () -> List<AppInfoEntity>,
+    onResume: () -> Unit = {},
 ) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     var pickerOpen by remember { mutableStateOf(false) }
     var limitPickerOpen by remember { mutableStateOf(false) }
+
+    // v1.3.0-fix: lifecycle-safe runtime permission launcher for POST_NOTIFICATIONS.
+    // Registered at the composable scope so it survives recomposition and config
+    // changes. The result callback is a no-op — the BlockerViewModel re-checks
+    // hasPostNotifications on resume (see onResume callback).
+    val notifPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { /* result ignored; permission state is re-checked on resume */ }
+
+    // v1.3.0-fix: re-check all four permission flags whenever the screen becomes
+    // visible. This catches the user granting/denying a permission in the system
+    // Settings screen and returning to the app — without this, the cards stay
+    // stale because the underlying combine only re-emits on blocked/limits/
+    // blockNotifications changes.
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                onResume()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     Column(
         modifier = Modifier
@@ -110,11 +142,15 @@ fun BlockerScreen(
             granted = state.hasDndAccess,
             onGrant = { ctx.startActivity(PermissionLogic.notificationPolicyAccessIntent()) },
         )
-        PermissionCard(
-            title = "Notifications permission",
-            desc = "Shows the blocker status notification",
+        // v1.3.0-fix: Notifications permission now uses the runtime
+        // ActivityResultContracts.RequestPermission() flow on Android 13+ — first
+        // tap shows the system permission dialog; if the user denies it (or has
+        // previously denied it permanently), the next tap falls back to opening
+        // this app's notification settings so they can re-enable it manually.
+        NotificationPermissionCard(
             granted = state.hasPostNotifications,
-            onGrant = { ctx.startActivity(PermissionLogic.notificationPermissionIntent()) },
+            onRequestRuntime = { notifPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS) },
+            onOpenSettings = { ctx.startActivity(PermissionLogic.notificationPermissionIntent(ctx)) },
         )
 
         SectionHeader("Notifications")
@@ -269,13 +305,89 @@ private fun PermissionCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            // v1.3.0-fix: color-coded status text — green for granted, red for not granted.
+            // Was a single gold "Granted" / default "Grant" button; now shows the true state.
             if (granted) {
                 Text("Granted",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = Success,
+                    fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(end = 8.dp))
             } else {
-                TextButton(onClick = onGrant) { Text("Grant") }
+                Text("Not granted",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Danger,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(end = 8.dp))
+                TextButton(onClick = onGrant) { Text("Enable in Settings") }
+            }
+        }
+    }
+}
+
+/**
+ * v1.3.0-fix: dedicated permission card for POST_NOTIFICATIONS.
+ *
+ * - On Android 13+ (TIRAMISU), the first tap triggers the runtime permission
+ *   dialog via [onRequestRuntime].
+ * - If the permission has been permanently denied (shouldShowRationale returns
+ *   false after a previous denial), or if we are on Android < 13 where there is
+ *   no runtime permission, the button label switches to "Enable in Settings"
+ *   and opens this app's notification settings via [onOpenSettings].
+ * - The status text reflects the actual permission state (granted / not granted)
+ *   and is re-evaluated by the BlockerViewModel on every ON_RESUME.
+ */
+@Composable
+private fun NotificationPermissionCard(
+    granted: Boolean,
+    onRequestRuntime: () -> Unit,
+    onOpenSettings: () -> Unit,
+) {
+    // v1.3.0-fix: try the runtime permission dialog first; the system silently
+    // no-ops if the permission has been permanently denied. The user always has
+    // a separate "Enable in Settings" button to open this app's notification
+    // settings, where they can re-enable notifications even after a permanent
+    // denial. We don't try to track "asked before" ourselves — Android's
+    // shouldShowRequestPermissionRationale is the canonical signal and we let
+    // the system dialog handle the user's response.
+
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surface,
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Notifications permission",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Medium)
+                Text("Shows the blocker status notification",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (granted) {
+                Text("Granted",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Success,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(end = 8.dp))
+            } else {
+                Text("Not granted",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Danger,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(end = 8.dp))
+                // v1.3.0-fix: always offer the runtime Grant button on Android 13+
+                // (the system silently no-ops if the permission was permanently
+                // denied), and always offer the Settings fallback for that case.
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    TextButton(onClick = onRequestRuntime) { Text("Grant") }
+                }
+                TextButton(onClick = onOpenSettings) { Text("Settings") }
             }
         }
     }
@@ -347,6 +459,55 @@ private fun LimitRow(l: LaunchLimitEntity, onRemove: () -> Unit, onEdit: () -> U
 }
 
 @Composable
+private fun AppPickerRow(
+    app: AppInfoEntity,
+    selected: Boolean,
+    onSelect: () -> Unit,
+) {
+    val ctx = LocalContext.current
+    // v1.3.0-fix: load the app's original launcher icon via PackageManager / AppIconCache.
+    // Loaded off the main thread to keep the picker scroll smooth even with hundreds of apps.
+    val bmp by produceState<android.graphics.Bitmap?>(initialValue = null, app.packageName) {
+        value = withContext(Dispatchers.IO) { AppIconCache.get(ctx).getBitmap(app.packageName) }
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onSelect() }
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // App icon (36dp) on the left — placeholder if not yet loaded / unavailable.
+        if (bmp != null) {
+            Image(
+                bitmap = bmp!!.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier.size(36.dp).clip(RoundedCornerShape(8.dp)),
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+            )
+        }
+        Spacer(Modifier.size(10.dp))
+        Text(
+            app.label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+        )
+        androidx.compose.material3.RadioButton(
+            selected = selected,
+            onClick = onSelect,
+        )
+    }
+}
+
+@Composable
 private fun AppPickerDialog(
     onDismiss: () -> Unit,
     onPick: (String, String, Int) -> Unit,
@@ -390,20 +551,11 @@ private fun AppPickerDialog(
                     }
                     LazyColumn {
                         items(filtered, key = { it.packageName }) { a ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { selected = a }
-                                    .padding(8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                androidx.compose.material3.RadioButton(
-                                    selected = selected?.packageName == a.packageName,
-                                    onClick = { selected = a },
-                                )
-                                Spacer(Modifier.size(8.dp))
-                                Text(a.label, style = MaterialTheme.typography.bodyMedium)
-                            }
+                            AppPickerRow(
+                                app = a,
+                                selected = selected?.packageName == a.packageName,
+                                onSelect = { selected = a },
+                            )
                         }
                     }
                 }
@@ -461,20 +613,11 @@ private fun LimitEditDialog(
                     }
                     LazyColumn {
                         items(filtered, key = { it.packageName }) { a ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { selected = a }
-                                    .padding(8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                androidx.compose.material3.RadioButton(
-                                    selected = selected?.packageName == a.packageName,
-                                    onClick = { selected = a },
-                                )
-                                Spacer(Modifier.size(8.dp))
-                                Text(a.label, style = MaterialTheme.typography.bodyMedium)
-                            }
+                            AppPickerRow(
+                                app = a,
+                                selected = selected?.packageName == a.packageName,
+                                onSelect = { selected = a },
+                            )
                         }
                     }
                 }

@@ -49,7 +49,11 @@ class UsageRepositoryImpl(
         val now = System.currentTimeMillis()
         if (now - lastInstalledScanMs < INSTALLED_SCAN_THROTTLE_MS) return@withContext
         lastInstalledScanMs = now
-        val list = installedApps.listInstalled(includeSystem = true)
+        // v1.3.0-fix: respect the includeSystem parameter (was hardcoded to true,
+        // which persisted system apps into the app_info table regardless of the
+        // user's "Show system apps" setting — so the blocker picker always showed
+        // system apps). The DAO is upserted with whatever the caller asked for.
+        val list = installedApps.listInstalled(includeSystem = includeSystem)
         val entities = list.map { installedApps.toEntity(it, now) }
         db.appInfoDao().upsert(entities)
         db.appInfoDao().deleteMissing(list.map { it.packageName })
