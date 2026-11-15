@@ -29,6 +29,7 @@ data class SettingsUiState(
     val hasOverlay: Boolean = false,
     val hasDndAccess: Boolean = false,
     val hasPostNotifications: Boolean = false,
+    val onboarded: Boolean = false,
     val theme: ThemeMode = ThemeMode.SYSTEM,
     val showSystemApps: Boolean = false,
     val refreshing: Boolean = false,
@@ -53,12 +54,14 @@ class SettingsViewModel(
                 settingsRepo.theme,
                 settingsRepo.showSystemApps,
                 settingsRepo.lastSyncMs,
-            ) { theme, showSys, lastSync ->
+                settingsRepo.onboarded,
+            ) { theme, showSys, lastSync, onboarded ->
                 _state.value.copy(
                     hasUsageAccess = settingsRepo.hasUsageAccess(),
                     hasOverlay = settingsRepo.hasOverlayPermission(),
                     hasDndAccess = settingsRepo.hasDndAccess(),
                     hasPostNotifications = settingsRepo.hasPostNotifications(),
+                    onboarded = onboarded,
                     theme = theme,
                     showSystemApps = showSys,
                     lastSyncMs = lastSync,

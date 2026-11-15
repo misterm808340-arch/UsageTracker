@@ -69,6 +69,28 @@ fun UsageTrackerNavHost(factory: AppViewModelFactory) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val showBottom = current in bottomNav.map { it.route }
 
+    // v1.3.1-fix: respect the persisted onboarded flag for the start destination.
+    // The old code hardcoded `startDestination = Routes.ONBOARDING`, so returning
+    // users who already onboarded were dropped on the Onboarding screen on every
+    // cold start. Now we collect `onboarded` and use it to pick the start
+    // destination. The LaunchedEffect navigates once after the first emission.
+    val settingsVm: com.usagetracker.app.ui.settings.SettingsViewModel =
+        androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
+    val onboardedState by settingsVm.state.collectAsStateWithLifecycle()
+    val onboarded = onboardedState.onboarded
+    // If we have not yet read the persisted flag, default to ONBOARDING (safe).
+    val startDest = if (onboarded) Routes.OVERVIEW else Routes.ONBOARDING
+    androidx.compose.runtime.LaunchedEffect(onboarded) {
+        if (onboarded && nav.currentDestination?.route == Routes.ONBOARDING) {
+            // Returning user landed on Onboarding due to a race before this
+            // LaunchedEffect ran — redirect to Overview, popping Onboarding
+            // so back exits the app instead of returning to Onboarding.
+            nav.navigate(Routes.OVERVIEW) {
+                popUpTo(Routes.ONBOARDING) { inclusive = true }
+            }
+        }
+    }
+
     // Helper: show an interstitial (if available and enough time passed) before
     // running the given navigation action. The action runs regardless — the ad
     // never blocks navigation.
@@ -109,7 +131,7 @@ fun UsageTrackerNavHost(factory: AppViewModelFactory) {
     ) { padding ->
         NavHost(
             navController = nav,
-            startDestination = Routes.ONBOARDING,
+            startDestination = startDest,
             modifier = Modifier.padding(padding)
         ) {
             composable(Routes.ONBOARDING) {
@@ -132,6 +154,7 @@ fun UsageTrackerNavHost(factory: AppViewModelFactory) {
                         nav.navigate(Routes.OVERVIEW) { popUpTo(Routes.ONBOARDING) { inclusive = true } }
                     },
                     onRefresh = { vm.refreshAccess() },
+                    onResume = vm::refreshAccess,
                 )
             }
             composable(Routes.OVERVIEW) {

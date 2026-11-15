@@ -25,11 +25,25 @@ object PermissionLogic {
 
     fun hasUsageAccess(context: Context): Boolean {
         val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
-        val mode = appOps.unsafeCheckOpNoThrow(
-            android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
-            android.os.Process.myUid(),
-            context.packageName
-        )
+        // v1.3.1-fix: unsafeCheckOpNoThrow(String, Int, String) was added in API 29.
+        // minSdk = 26 means we must fall back to the deprecated checkOpNoThrow on
+        // API 26–28 to avoid NoSuchMethodError. The deprecated String-overload
+        // (op string, uid, packageName) has existed since API 21, so it is safe
+        // on the fallback path.
+        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            appOps.unsafeCheckOpNoThrow(
+                android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(),
+                context.packageName
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            appOps.checkOpNoThrow(
+                android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(),
+                context.packageName
+            )
+        }
         return mode == android.app.AppOpsManager.MODE_ALLOWED
     }
 
